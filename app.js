@@ -45,6 +45,18 @@ app.get('/',(req,res)=>{
 res.send('Server is awake!')
 })
 
+app.post('/get-data',(req,res)=>{
+  const email = req.body.email;
+
+  Profile.find({email:email},(err,data)=>{
+    if(err){
+      res.send('error')
+    } else {
+      res.send(data)
+    }
+  })
+  })
+
 //Interview Question Writer
 
 app.post('/save-interview-questions', (req,res)=>{
@@ -79,12 +91,12 @@ Profile.find({email:email}, (err,data)=>{
  
         
       }
-      // saved
+      // saved!
       })
  
 
   } else {
-    Profile.findByIdAndUpdate({email:email},{$push:{savedQuestionairres:object}}, {'new': true, 'safe': true, 'upsert': true},(err,data)=>{
+    Profile.findOneAndUpdate({email:email},{$push:{savedQuestionairres:object}}, {'new': true, 'safe': true, 'upsert': true},(err,data)=>{
       if(err){
         res.send('error')
         console.log(err)
@@ -102,6 +114,33 @@ Profile.find({email:email}, (err,data)=>{
   
 })
 
+// Update
+app.post('/update-iq',(req,res)=>{
+  const {email, object} = req.body;
+  console.log(object)
+  Profile.findOneAndUpdate({email:email},{$set: {"savedQuestionairres.$[el].categories": object.categories}},{arrayFilters: [{ "el.id": object.id}],'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+
+    if(err){
+      res.send('error')
+    } else {
+      res.send('updated')
+    }
+  })
+  })
+
+  // Delete
+app.post('/delete-iq',(req,res)=>{
+  const {email, iqId} = req.body;
+  
+  Profile.findOneAndUpdate({email:email},{$pull: {savedQuestionairres:{id: iqId}}},{'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+
+    if(err){
+      res.send('error')
+    } else {
+      res.send('updated')
+    }
+  })
+  })
 
 
 
