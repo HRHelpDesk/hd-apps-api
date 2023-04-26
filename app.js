@@ -142,6 +142,35 @@ app.post('/delete-iq',(req,res)=>{
   })
   })
 
+    // Add
+app.post('/add-iq',(req,res)=>{
+  const {email, object} = req.body;
+  
+  Profile.findOneAndUpdate({email:email},{$push: {savedQuestionairres:object}},{'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+
+    if(err){
+      res.send('error')
+    } else {
+      res.send('updated')
+    }
+  })
+  })
+
+
+      // Change Name
+app.post('/change-iq-name',(req,res)=>{
+  const {email, id,name} = req.body;
+  
+  Profile.findOneAndUpdate({email:email},{$set: {"savedQuestionairres.$[el].job": name}},{arrayFilters: [{ "el.id": id}],'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+
+    if(err){
+      res.send('error')
+    } else {
+      res.send('updated')
+    }
+  })
+  })
+
 
 
 
