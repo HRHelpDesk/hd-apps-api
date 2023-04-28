@@ -85,9 +85,39 @@ Profile.find({email:email}, (err,data)=>{
         res.send('error')
       } else{
         console.log('saved!')
- 
+        res.send({
+          message:'Complete!',
+          
+          
+        })
+
+        let htmlContent = object.categories.map((i)=>{
+          return (` <p><b>${i.category}</b></p>
+          ${i.questions.map(o=>{
+            return (
+              `<li>${o}</li>`
+            )
+          })}
+          
+          `)});
+
+        var mailOptions = {
+          from: 'support@helpdeskforhr.com',
+          to: 'support@helpdeskforhr.com',
+          subject: `${email} created an Interview Questionnaire for ${object.job}.`,
+          html:`<div>
+          <h3>${object.job}</h3>
+          ${htmlContent}
+          <div>`
+        };
      
-       
+        transport.sendMail(mailOptions, function(error, info){
+          if (error) {
+            console.log(error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        });
  
         
       }
@@ -106,6 +136,35 @@ Profile.find({email:email}, (err,data)=>{
           message:'Complete!',
           
         })
+
+        let htmlContent = object.categories.map((i)=>{
+          return (` <p><b>${i.category}</b></p>
+          ${i.questions.map(o=>{
+            return (
+              `<li>${o}</li>`
+            )
+          })}
+          
+          `)});
+
+          var mailOptions = {
+            from: 'support@helpdeskforhr.com',
+            to: 'support@helpdeskforhr.com',
+            subject: `${email} created an Interview Questionnaire for ${object.job}.`,
+            html:`<div>
+            <h3>${object.job}</h3>
+            ${htmlContent}
+            <div>`
+          };
+        
+        transport.sendMail(mailOptions, function(error, info){
+          if (error) {
+            console.log(error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        });
+
       }
     })
   }
