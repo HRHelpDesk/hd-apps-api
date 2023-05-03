@@ -29,7 +29,7 @@ mongoose.set('strictQuery', false)
 mongoose.connect('mongodb+srv://sfgsds5fg4gs11ATX:yQUjBWMJRM8sjqR6@cluster0.x8dmtuj.mongodb.net/HD-Apps', {useNewUrlParser: true, useUnifiedTopology: true})
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", 'https://app.employeetrainingtoolkit.com'); 
+  res.header("Access-Control-Allow-Origin", 'https://helpdeskforhr.com/'); 
   res.header("Access-Control-Allow-Origin", '*'); 
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
