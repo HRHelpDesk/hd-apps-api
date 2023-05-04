@@ -8,6 +8,7 @@ const axios = require('axios');
 const { uuid } = require('uuidv4');
 const nodemailer = require('nodemailer');
 const { Configuration, OpenAIApi } = require("openai");
+const { JobPostEmail } = require('./email-templates/job-post-email');
 require('dotenv').config()
 ///Middleware
 const configuration = new Configuration({
@@ -314,7 +315,7 @@ app.post('/save-job-post', (req,res)=>{
             subject: `${email} created an Job Post for ${object.jobPostData.jobTitle}.`,
             html:`<div>
            
-            ${JSON.stringify(object)}
+            ${JobPostEmail(object)}
             <div>`
           };
        
@@ -350,7 +351,7 @@ app.post('/save-job-post', (req,res)=>{
               to: 'support@helpdeskforhr.com',
               subject: `${email} created an Job Post for ${object.jobPostData.jobTitle}.`,
               html:`<div>
-              ${JSON.stringify(object)}
+              ${JobPostEmail(option)}
               <div>`
             };
           
