@@ -8,6 +8,14 @@ const axios = require('axios');
 const { uuid } = require('uuidv4');
 const nodemailer = require('nodemailer');
 const { Configuration, OpenAIApi } = require("openai");
+const fs = require('fs');
+
+// FIXME: Incase you have the npm package
+// const HTMLtoDOCX = require('html-to-docx');
+const HTMLtoDOCX = require('html-to-docx')
+
+const filePath = './example.docx';
+
 const { JobPostEmail } = require('./email-templates/job-post-email');
 require('dotenv').config()
 ///Middleware
@@ -48,10 +56,11 @@ const user = new mongoose.Schema({
 
 
 const Profile = mongoose.model('user', user);
+
+
 app.use(express.json());
 
 /// End Middleware
-
 
   app.post('/create-data',(req,res)=>{
     const {request} = req.body;
@@ -81,6 +90,90 @@ app.use(express.json());
       res.send('error')
     }
     })
+
+    app.post('/create-document',(req,res)=>{
+      const {request} = req.body;
+  
+      async function runPrompt () {
+        const completion = await openai.createCompletion({
+          "model": "text-davinci-003",
+          "prompt": request,
+          "temperature": 0.6,
+          "max_tokens": 1024,
+          "stream": false
+        });
+  
+            const generatedHTML = completion.data.choices[0].text.trim();
+console.log(generatedHTML)
+      res.send(generatedHTML);
+        }
+      try{
+        runPrompt()
+      
+  
+  
+      } 
+      catch{
+        res.send('error')
+      }
+      })
+
+      app.post('/convert', async (req, res) => {
+        const { htmlContent, docName } = req.body;
+
+        console.log(htmlContent)
+        console.log(docName)
+        try {
+          const fileBuffer = await HTMLtoDOCX(htmlContent, null, {
+            title: docName,
+            table: { row: { cantSplit: true } },
+            footer: true,
+            pageNumber: true,
+            font: 'Calibri'
+          
+          });
+          const fileName = `${docName}.docx`;
+      
+          res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+          res.setHeader('Content-Length', fileBuffer.length);
+          res.end(fileBuffer);
+        } catch (error) {
+          console.log('An error occurred while converting the HTML to DOCX:', error);
+          res.status(500).send('An error occurred while converting the HTML to DOCX.');
+        }
+      
+      });
+      
+
+    app.post('/create-data-iqw',(req,res)=>{
+      const {request} = req.body;
+  
+      async function runPrompt () {
+        const completion = await openai.createCompletion({
+          "model": "text-davinci-003",
+          "prompt": request,
+          "temperature": 0.6,
+          "max_tokens": 1024,
+          "stream": false
+        });
+  
+        const startIndex = completion.data.choices[0].text.indexOf("[");
+        const result = completion.data.choices[0].text.substring(startIndex);
+  
+        res.send(result)
+        console.log(completion.data.choices[0].text)
+        }
+      try{
+        runPrompt()
+      
+  
+  
+      } 
+      catch{
+        res.send('error')
+      }
+      })
 
 
 app.get('/',(req,res)=>{
@@ -214,6 +307,8 @@ Profile.find({email:email}, (err,data)=>{
   })
   
 })
+
+ 
 
 // Update
 app.post('/update-iq',(req,res)=>{
@@ -351,7 +446,7 @@ app.post('/save-job-post', (req,res)=>{
               to: 'support@helpdeskforhr.com',
               subject: `${email} created an Job Post for ${object.jobPostData.jobTitle}.`,
               html:`<div>
-              ${JobPostEmail(option)}
+              ${JobPostEmail(object)}
               <div>`
             };
           
@@ -400,7 +495,7 @@ app.post('/add-jp',(req,res)=>{
   })
   })
 
-  //Change Name
+  //Changed Name
 
   app.post('/change-jp-name',(req,res)=>{
     const {email, id,name} = req.body;
@@ -431,7 +526,161 @@ app.post('/delete-jp',(req,res)=>{
   
 
   // END Job Post Genie
+//Policies and Forms Genie
 
+app.post('/save-form-policy', (req,res)=>{
+  const {email, object} = req.body;
+  console.log(email);
+  console.log(object) 
+  Profile.find({email:email}, (err,data)=>{
+    if(err){
+      res.send('error')
+    } else {
+      if(data.length === 0){
+        let newUser = new Profile({
+          id: uuid(),
+          email:email,
+          savedQuestionairres:[],
+          jobPostings:[],
+          jobDescriptions:[],
+          employeeHandbooks:[],
+          savedPolicies:[object]
+        
+  
+       
+      })
+      newUser.save(function (err) {
+        if (err) {
+          res.send('error')
+        } else{
+          console.log('saved!')
+          res.send({
+            message:'Complete!',
+            
+            
+          })
+  
+          let htmlContent = object.content;
+  
+          var mailOptions = {
+            from: 'support@helpdeskforhr.com',
+            to: 'support@helpdeskforhr.com',
+            subject: `${email} created a ${object.type} called ${object.docName}.`,
+            html:`<div>
+            
+            ${htmlContent}
+            <div>`
+          };
+       
+          transport.sendMail(mailOptions, function(error, info){
+            if (error) {
+              console.log(error);
+            } else {
+              console.log('Email sent: ' + info.response);
+            }
+          });
+   
+          
+        }
+        // saved!
+        })
+ 
+
+  } else {
+    Profile.findOneAndUpdate({email:email},{$push:{savedPolicies:object}}, {'new': true, 'safe': true, 'upsert': true},(err,data)=>{
+      if(err){
+        res.send('error')
+        console.log(err)
+      } else {
+  
+        res.send({
+          message:'Complete!',
+          
+        })
+
+        let htmlContent = object.content;
+  
+          var mailOptions = {
+            from: 'support@helpdeskforhr.com',
+            to: 'support@helpdeskforhr.com',
+            subject: `${email} created a ${object.type} called ${object.docName}.`,
+            html:`<div>
+            
+            ${htmlContent}
+            <div>`
+          };
+        
+        transport.sendMail(mailOptions, function(error, info){
+          if (error) {
+            console.log(error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        });
+
+      }
+    })
+  }
+}
+  })
+  
+})
+
+// Update
+app.post('/update-form-policy',(req,res)=>{
+  const {email, object} = req.body;
+  console.log(object)
+  Profile.findOneAndUpdate({email:email},{$set: {"savedPolicies.$[el].content": object.content}},{arrayFilters: [{ "el.id": object.id}],'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+
+    if(err){
+      res.send('error')
+    } else {
+      res.send('updated')
+    }
+  })
+  })
+//DUPLICATE
+  app.post('/add-form-policy',(req,res)=>{
+    const {email, object} = req.body;
+    
+    Profile.findOneAndUpdate({email:email},{$push: {savedPolicies:object}},{'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+  
+      if(err){
+        res.send('error')
+      } else {
+        res.send('updated')
+      }
+    })
+    })
+
+     //Changed Name
+
+  app.post('/change-form-policy-name',(req,res)=>{
+    const {email, id,name} = req.body;
+    
+    Profile.findOneAndUpdate({email:email},{$set: {"savedPolicies.$[el].docName": name}},{arrayFilters: [{ "el.id": id}],'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+  
+      if(err){
+        res.send('error')
+      } else {
+        res.send('updated')
+      }
+    })
+    })
+
+      // Delete
+app.post('/delete-form-policy',(req,res)=>{
+  const {email, id} = req.body;
+  
+  Profile.findOneAndUpdate({email:email},{$pull: {savedPolicies:{id: id}}},{'new': true, 'safe': true, 'upsert': true}, (err,data)=>{
+
+    if(err){
+      res.send('error')
+    } else {
+      res.send('updated')
+    }
+  })
+  })
 
 
 
